@@ -5,16 +5,38 @@ import { useState } from "react";
 export default function Home() {
   const [business, setBusiness] = useState("");
   const [submittedBusiness, setSubmittedBusiness] = useState("");
-  const [result, setResult] = useState(false);
+  const [result, setResult] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const generateStrategy = () => {
+  const generateStrategy = async () => {
     if (!business.trim()) {
       alert("Por favor describe tu negocio.");
       return;
     }
 
-    setSubmittedBusiness(business);
-    setResult(true);
+    try {
+      setLoading(true);
+
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          business,
+        }),
+      });
+
+      const data = await response.json();
+
+      setSubmittedBusiness(business);
+      setResult(data.result);
+    } catch (error) {
+      console.error(error);
+      alert("Error conectando con OpenAI");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -38,16 +60,17 @@ export default function Home() {
         <div className="flex gap-4 mt-6">
           <button
             onClick={generateStrategy}
-            className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-semibold"
+            disabled={loading}
+            className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-semibold disabled:opacity-50"
           >
-            Generar Estrategia IA
+            {loading ? "Generando..." : "Generar Estrategia IA"}
           </button>
 
           <button
             onClick={() => {
               setBusiness("");
               setSubmittedBusiness("");
-              setResult(false);
+              setResult("");
             }}
             className="bg-slate-700 hover:bg-slate-600 px-6 py-3 rounded-lg font-semibold"
           >
@@ -55,48 +78,23 @@ export default function Home() {
           </button>
         </div>
 
+        {submittedBusiness && (
+          <div className="mt-4 text-sm text-gray-400">
+            Última consulta: {submittedBusiness}
+          </div>
+        )}
+
         {result && (
-          <div className="mt-8 grid gap-4">
+          <div className="mt-8">
+            <div className="bg-slate-800 p-6 rounded-lg">
+              <h2 className="text-2xl font-bold mb-4">
+                🚀 Estrategia Generada por IA
+              </h2>
 
-            <div className="bg-slate-800 p-5 rounded-lg">
-              <h2 className="text-xl font-bold mb-2">🎯 Buyer Persona</h2>
-              <p>
-                Personas interesadas en servicios relacionados con:
-                {" "}
-                {submittedBusiness}
-              </p>
+              <div className="whitespace-pre-wrap text-gray-200">
+                {result}
+              </div>
             </div>
-
-            <div className="bg-slate-800 p-5 rounded-lg">
-              <h2 className="text-xl font-bold mb-2">💰 Presupuesto</h2>
-              <p>$20 USD por día.</p>
-            </div>
-
-            <div className="bg-slate-800 p-5 rounded-lg">
-              <h2 className="text-xl font-bold mb-2">📢 Facebook Ad</h2>
-              <p>
-                Descubre más sobre: {submittedBusiness}
-              </p>
-            </div>
-
-            <div className="bg-slate-800 p-5 rounded-lg">
-              <h2 className="text-xl font-bold mb-2">📸 Instagram Ad</h2>
-              <p>
-                Contenido optimizado para Instagram sobre:
-                {" "}
-                {submittedBusiness}
-              </p>
-            </div>
-
-            <div className="bg-slate-800 p-5 rounded-lg">
-              <h2 className="text-xl font-bold mb-2">🎵 TikTok Ad</h2>
-              <p>
-                Video promocional sugerido para:
-                {" "}
-                {submittedBusiness}
-              </p>
-            </div>
-
           </div>
         )}
       </div>
